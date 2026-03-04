@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraSense | AI-Powered Teleconsultation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <div id="cursor-glow"></div>
+
+    <header id="nav-bar" class="dynamic-glass-header">
+        <div class="logo">TheraSense</div>
+    </header>
+
+    <main id="landing-page" class="container">
+        <div class="glass-panel content-box text-center">
+            <h1>Welcome to TheraSense</h1>
+            <p>Enhancing remote mental health care through emotion-aware technology.</p>
+            <p>TheraSense uses advanced AI to track facial expressions during video teleconsultations, providing therapists with real-time, quantifiable emotional insights to deliver more personalized care.</p>
+        </div>
+        
+        <div class="action-area text-center">
+            <button id="show-login-btn" class="glass-btn primary-btn">Login to Platform</button>
+        </div>
+    </main>
+
+    <div id="login-modal" class="modal hidden">
+        <div class="glass-panel login-box">
+            <h2>Sign In</h2>
+            <div class="tabs">
+                <button class="glass-btn tab-btn active" data-role="therapist">Therapist</button>
+                <button class="glass-btn tab-btn" data-role="patient">Patient</button>
+            </div>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <label>User ID</label>
+                    <input type="text" id="userid" class="glass-input" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" class="glass-input" required>
+                </div>
+                <button type="submit" class="glass-btn submit-btn">Login</button>
+            </form>
+            <button id="close-login-btn" class="glass-btn close-btn">Cancel</button>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden container">
+        <div class="glass-panel">
+            <h2 id="dashboard-title">Dashboard</h2>
+            <p>Welcome back. Dashboard features coming in Phase 2.</p>
+            <button id="logout-btn" class="glass-btn">Logout</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

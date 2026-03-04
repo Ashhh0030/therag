@@ -1,0 +1,138 @@
+/* style.css */
+:root {
+    --bg-color: #080808; 
+    /* Increased white opacity for a more pronounced glass effect */
+    --glass-bg: rgba(255, 255, 255, 0.08); 
+    --glass-border: rgba(255, 255, 255, 0.15); 
+    --glass-highlight: rgba(255, 255, 255, 0.2);
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+}
+
+* {
+    box-sizing: border-box; margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* Background Effects */
+#particle-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: -2; pointer-events: none;
+}
+
+#cursor-glow {
+    position: fixed;
+    top: 50%; left: 50%;
+    /* Increased range (size) and reduced intensity (opacity) */
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.025) 0%, rgba(0, 0, 0, 0) 60%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: -1;
+    transition: width 0.2s, height 0.2s; 
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px); /* Creates the blur for particles passing behind */
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* --- Dynamic Glass Navbar (Replaced the old Navigation block) --- */
+.dynamic-glass-header {
+    width: 100%;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    border-radius: 0 0 20px 20px;
+    margin-bottom: 40px;
+    position: relative; 
+    z-index: 1000;
+    
+    /* Base state: Almost completely transparent */
+    background: rgba(255, 255, 255, 0.01); 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    overflow: hidden; /* Keeps the glowing mask contained inside the navbar */
+}
+
+/* The hidden heavy glass layer revealed by hover */
+.dynamic-glass-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    
+    /* The heavy frosted glass effect */
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    z-index: -1;
+    
+    /* Mask: Reveals the blur only in a 200px circle around the cursor */
+    -webkit-mask-image: radial-gradient(circle 200px at var(--mouse-x, -1000px) var(--mouse-y, -1000px), black 0%, transparent 100%);
+    mask-image: radial-gradient(circle 200px at var(--mouse-x, -1000px) var(--mouse-y, -1000px), black 0%, transparent 100%);
+    
+    transition: opacity 0.3s ease;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 2; /* Ensures text stays above the blur */
+}
+
+/* Layout */
+.container {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 20px; width: 100%; max-width: 800px; margin: 0 auto;
+}
+.content-box { padding: 50px; border-radius: 20px; margin-bottom: 40px; }
+.content-box h1 { margin-bottom: 20px; font-size: 2.8rem; font-weight: 400;}
+.content-box p { margin-bottom: 15px; color: var(--text-secondary); line-height: 1.6; font-weight: 300;}
+.text-center { text-align: center; }
+.hidden { display: none !important; }
+
+/* Buttons & Inputs (Glass effect) */
+.glass-btn, .glass-input {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    color: var(--text-primary); padding: 12px 24px;
+    border-radius: 12px; font-size: 1rem; cursor: pointer;
+    transition: all 0.3s ease; outline: none; font-weight: 300;
+}
+.glass-btn:hover { background: var(--glass-highlight); box-shadow: 0 0 20px rgba(255, 255, 255, 0.1); }
+.primary-btn { padding: 15px 40px; font-size: 1.2rem; margin-top: 20px; border-radius: 30px;}
+
+/* Modal & Login Form */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.login-box { padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; }
+.login-box h2 { text-align: center; margin-bottom: 30px; font-weight: 400;}
+.tabs { display: flex; gap: 10px; margin-bottom: 30px; }
+.tab-btn { flex: 1; border-radius: 8px;}
+.tab-btn.active { background: rgba(255, 255, 255, 0.15); font-weight: 500; }
+.input-group { margin-bottom: 20px; display: flex; flex-direction: column; text-align: left; }
+.input-group label { margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary); }
+.glass-input { padding: 15px; width: 100%; background: rgba(0,0,0,0.2); border-radius: 8px;}
+.glass-input:focus { border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.4); }
+.submit-btn { width: 100%; margin-bottom: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;}
+.close-btn { width: 100%; background: transparent; border: none; color: var(--text-secondary); }
+.close-btn:hover { background: rgba(255,0,0,0.1); color: #fff; }
