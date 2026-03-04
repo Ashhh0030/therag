@@ -322,9 +322,14 @@ createPatientForm.addEventListener('submit', async (e) => {
 });
 
 // Handle Logout
+// Handle Logout
 document.querySelectorAll('.close-btn').forEach(btn => {
     if(btn.id !== 'close-login-btn') {
         btn.addEventListener('click', () => {
+            
+            // Tell the server to save the DB log before we leave!
+            socket.emit('end-session', ROOM_ID); 
+            
             dashboardContainer.classList.add('hidden');
             therapistDashboard.classList.add('hidden');
             patientDashboard.classList.add('hidden');
@@ -423,23 +428,48 @@ if (videoWrapper) {
         faceapi.matchDimensions(canvas, displaySize);
 
         // Run the AI analysis 10 times per second
+        // Run the AI analysis 10 times per second
+        // Run the AI analysis 10 times per second
+        let frameCounter = 0; // Keeps track of how many frames have passed
+
         setInterval(async () => {
             if (remoteVideo.paused || remoteVideo.ended) return;
 
-            // Detect faces, landmarks, and expressions
             const detections = await faceapi.detectAllFaces(remoteVideo, new faceapi.TinyFaceDetectorOptions())
                 .withFaceLandmarks()
                 .withFaceExpressions();
 
-            // Resize the bounding boxes to match our UI
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
-
-            // Clear the previous frame's drawings
             canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the new bounding boxes and emotion percentages!
             faceapi.draw.drawDetections(canvas, resizedDetections);
             faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+
+            if (detections.length > 0) {
+                const expressions = detections[0].expressions;
+                let snapshot = null;
+
+                // NEW: Capture an image every 5 seconds (50 frames @ 100ms interval)
+                if (frameCounter % 50 === 0) {
+                    const snapCanvas = document.createElement('canvas');
+                    snapCanvas.width = remoteVideo.videoWidth;
+                    snapCanvas.height = remoteVideo.videoHeight;
+                    const snapCtx = snapCanvas.getContext('2d');
+                    
+                    // Draw the video frame onto the hidden canvas
+                    snapCtx.drawImage(remoteVideo, 0, 0, snapCanvas.width, snapCanvas.height);
+                    
+                    // Convert the canvas to a JPEG string (0.5 = 50% quality to save space)
+                    snapshot = snapCanvas.toDataURL('image/jpeg', 0.5); 
+                }
+                
+                frameCounter++;
+
+                socket.emit('emotion-update', { 
+                    room: ROOM_ID, 
+                    expressions: expressions,
+                    image: snapshot // Send the image (will be null unless it's the 5th second)
+                });
+            }
         }, 100);
     });
 }
@@ -476,3 +506,207 @@ socket.on('ice-candidate', async (data) => {
         console.error('Error adding received ice candidate', e);
     }
 });
+
+// --- ANALYTICS DASHBOARD LOGIC ---
+const analyticsModal = document.getElementById('analytics-modal');
+const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
+const viewAnalyticsBtn = document.getElementById('view-analytics-btn');
+let emotionChartInstance = null; 
+
+if(viewAnalyticsBtn) {
+    viewAnalyticsBtn.addEventListener('click', async () => {
+        analyticsModal.classList.remove('hidden');
+        await loadAnalyticsData();
+    });
+}
+
+if(closeAnalyticsBtn) {
+    closeAnalyticsBtn.addEventListener('click', () => {
+        analyticsModal.classList.add('hidden');
+    });
+}
+
+async function loadAnalyticsData() {
+    try {
+        const response = await fetch(`/api/sessions`);
+        const data = await response.json();
+
+        if (data.success) {
+            renderAnalyticsSidebar(data.sessions);
+            // Reset main view
+            document.getElementById('analytics-main-view').innerHTML = `
+                <div style="display: flex; height: 100%; align-items: center; justify-content: center;">
+                    <p style="color: var(--text-secondary); text-align: center;">Select a session from the sidebar to view data.</p>
+                </div>`;
+        } else {
+            alert("Error loading history.");
+        }
+    } catch (error) {
+        console.error("Error loading analytics:", error);
+    }
+}
+
+function renderAnalyticsSidebar(sessions) {
+    const sidebar = document.getElementById('analytics-sidebar');
+    sidebar.innerHTML = '';
+    
+    if(sessions.length === 0) {
+        sidebar.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.9rem;">No sessions recorded yet.</p>';
+        return;
+    }
+
+    // Group sessions by their Room ID (which acts as the Patient identifier)
+    const grouped = sessions.reduce((acc, session) => {
+        if(!acc[session.roomId]) acc[session.roomId] = [];
+        acc[session.roomId].push(session);
+        return acc;
+    }, {});
+
+    for (const [patientId, patientSessions] of Object.entries(grouped)) {
+        const patientDiv = document.createElement('div');
+        patientDiv.style.marginBottom = '25px';
+        
+        const patientHeader = document.createElement('h4');
+        patientHeader.innerText = `👤 Patient: ${patientId}`;
+        patientHeader.style.color = '#fff';
+        patientHeader.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+        patientHeader.style.paddingBottom = '8px';
+        patientHeader.style.marginBottom = '10px';
+        patientDiv.appendChild(patientHeader);
+
+        patientSessions.forEach(session => {
+            const sessionRow = document.createElement('div');
+            sessionRow.style.display = 'flex';
+            sessionRow.style.justifyContent = 'space-between';
+            sessionRow.style.alignItems = 'center';
+            sessionRow.style.padding = '10px';
+            sessionRow.style.background = 'rgba(255,255,255,0.03)';
+            sessionRow.style.borderRadius = '8px';
+            sessionRow.style.marginBottom = '8px';
+            sessionRow.style.cursor = 'pointer';
+            sessionRow.style.transition = 'background 0.2s';
+
+            sessionRow.onmouseover = () => sessionRow.style.background = 'rgba(255,255,255,0.08)';
+            sessionRow.onmouseout = () => sessionRow.style.background = 'rgba(255,255,255,0.03)';
+
+            const dateText = document.createElement('span');
+            dateText.style.fontSize = '0.85rem';
+            dateText.style.color = 'var(--text-secondary)';
+            dateText.innerText = new Date(session.startTime).toLocaleDateString() + ' ' + new Date(session.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            const delBtn = document.createElement('button');
+            delBtn.innerText = '🗑️';
+            delBtn.style.background = 'none';
+            delBtn.style.border = 'none';
+            delBtn.style.cursor = 'pointer';
+            delBtn.style.fontSize = '1.1rem';
+            delBtn.title = 'Delete Session';
+
+            // Delete Logic
+            delBtn.addEventListener('click', async (e) => {
+                e.stopPropagation(); 
+                if(confirm('Are you sure you want to permanently delete this session log?')) {
+                    await fetch(`/api/sessions/${session._id}`, { method: 'DELETE' });
+                    loadAnalyticsData(); // Refresh the list!
+                }
+            });
+
+            // View Logic
+            sessionRow.addEventListener('click', () => renderSessionDetails(session));
+
+            sessionRow.appendChild(dateText);
+            sessionRow.appendChild(delBtn);
+            patientDiv.appendChild(sessionRow);
+        });
+
+        sidebar.appendChild(patientDiv);
+    }
+}
+
+function renderSessionDetails(session) {
+    const mainView = document.getElementById('analytics-main-view');
+    mainView.innerHTML = `
+        <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+            <canvas id="emotion-chart"></canvas>
+        </div>
+        <h3>Session Snapshots</h3>
+        <div id="snapshot-gallery" style="display: flex; gap: 15px; overflow-x: auto; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;"></div>
+    `;
+    plotChart(session.emotions);
+    displaySnapshots(session.emotions);
+}
+
+function plotChart(emotionsData) {
+    const ctx = document.getElementById('emotion-chart').getContext('2d');
+    if (emotionChartInstance) emotionChartInstance.destroy();
+
+    const labels = emotionsData.map(e => new Date(e.timestamp).toLocaleTimeString([], {minute: '2-digit', second:'2-digit'}));
+    
+    // Helper function to extract a specific emotion percentage safely
+    const extract = (emotion) => emotionsData.map(e => (e.expressions[emotion] * 100).toFixed(1));
+
+    emotionChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Happy', data: extract('happy'), borderColor: '#00ff88', backgroundColor: 'rgba(0, 255, 136, 0.1)', tension: 0.4 },
+                { label: 'Sad', data: extract('sad'), borderColor: '#00ccff', backgroundColor: 'rgba(0, 204, 255, 0.1)', tension: 0.4 },
+                { label: 'Neutral', data: extract('neutral'), borderColor: '#a0a0a0', backgroundColor: 'rgba(160, 160, 160, 0.1)', tension: 0.4 },
+                { label: 'Angry', data: extract('angry'), borderColor: '#ff4444', backgroundColor: 'rgba(255, 68, 68, 0.1)', tension: 0.4, hidden: true },
+                { label: 'Disgusted', data: extract('disgusted'), borderColor: '#9933ff', backgroundColor: 'rgba(153, 51, 255, 0.1)', tension: 0.4, hidden: true },
+                { label: 'Surprised', data: extract('surprised'), borderColor: '#ffff00', backgroundColor: 'rgba(255, 255, 0, 0.1)', tension: 0.4, hidden: true },
+                { label: 'Fearful', data: extract('fearful'), borderColor: '#ff9900', backgroundColor: 'rgba(255, 153, 0, 0.1)', tension: 0.4, hidden: true }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, max: 100, ticks: { color: '#a0a0a0' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                x: { ticks: { color: '#a0a0a0', maxTicksLimit: 10 }, grid: { display: false } }
+            },
+            plugins: {
+                legend: { 
+                    labels: { color: '#ffffff', boxWidth: 12 }, 
+                    position: 'bottom',
+                    // Adds a tooltip instructing the user they can click to toggle
+                    title: { display: true, text: 'Click a label to toggle visibility', color: '#a0a0a0', font: {size: 10} }
+                }
+            }
+        }
+    });
+}
+
+function displaySnapshots(emotionsData) {
+    const snapshotGallery = document.getElementById('snapshot-gallery');
+    snapshotGallery.innerHTML = ''; 
+    
+    const entriesWithImages = emotionsData.filter(e => e.image);
+
+    if (entriesWithImages.length === 0) {
+        snapshotGallery.innerHTML = '<p style="color: var(--text-secondary);">No snapshots captured during this session.</p>';
+        return;
+    }
+
+    entriesWithImages.forEach(entry => {
+        const wrapper = document.createElement('div');
+        wrapper.style.minWidth = '120px';
+        wrapper.style.textAlign = 'center';
+
+        const img = document.createElement('img');
+        img.src = entry.image;
+        img.style.width = '120px';
+        img.style.borderRadius = '8px';
+        img.style.border = '1px solid var(--glass-border)';
+
+        const timeLabel = document.createElement('div');
+        timeLabel.innerText = new Date(entry.timestamp).toLocaleTimeString([], {minute: '2-digit', second:'2-digit'});
+        timeLabel.style.fontSize = '0.8rem';
+        timeLabel.style.color = 'var(--text-secondary)';
+        timeLabel.style.marginTop = '5px';
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(timeLabel);
+        snapshotGallery.appendChild(wrapper);
+    });
+}

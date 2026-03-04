@@ -2,12 +2,12 @@
 const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
-const http = require('http'); // NEW
-const { Server } = require('socket.io'); // NEW
+const http = require('http'); 
+const { Server } = require('socket.io'); 
 
 const app = express();
-const server = http.createServer(app); // NEW: Wrap Express in HTTP server
-const io = new Server(server); // NEW: Attach Socket.io to the server
+const server = http.createServer(app); 
+const io = new Server(server); 
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -21,6 +21,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/therasense_db')
     })
     .catch(err => console.error('❌ MongoDB connection error:', err));
 
+// --- USER SCHEMA ---
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -29,6 +30,23 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
+
+// --- NEW: SESSION LOG SCHEMA ---
+const sessionLogSchema = new mongoose.Schema({
+    roomId: String,
+    startTime: { type: Date, default: Date.now },
+    endTime: Date,
+    emotions: [{
+        timestamp: { type: Date, default: Date.now },
+        expressions: Object, // Stores { happy: 0.9, sad: 0.01, etc. }
+        image: String // NEW: Will store the Base64 image snapshot
+    }]
+});
+
+const SessionLog = mongoose.model('SessionLog', sessionLogSchema);
+
+// In-memory storage to hold the live data until the session ends
+const activeSessions = {}; 
 
 async function createDefaultTherapist() {
     const existing = await User.findOne({ username: 'therapist' });
@@ -70,14 +88,75 @@ app.post('/api/patients', async (req, res) => {
     }
 });
 
-// --- WEBRTC SIGNALING (SOCKET.IO) ---
+// 4. Get ALL session logs (for the Analytics Dashboard)
+app.get('/api/sessions', async (req, res) => {
+    try {
+        // Fetch all sessions, newest first
+        const sessions = await SessionLog.find().sort({ startTime: -1 });
+        res.json({ success: true, sessions });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Database error' });
+    }
+});
+
+// 5. Delete a specific session log
+app.delete('/api/sessions/:id', async (req, res) => {
+    try {
+        await SessionLog.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Database error' });
+    }
+});
+
+// --- WEBRTC SIGNALING & DATA LOGGING (SOCKET.IO) ---
 io.on('connection', (socket) => {
-    console.log('A user connected for signaling:', socket.id);
+    console.log('A user connected:', socket.id);
 
     // Join a specific consultation room
     socket.on('join-room', (roomId) => {
         socket.join(roomId);
         socket.to(roomId).emit('user-joined', socket.id);
+        
+        // Start recording the session if it hasn't started yet
+        if (!activeSessions[roomId]) {
+            activeSessions[roomId] = {
+                roomId: roomId,
+                startTime: new Date(),
+                emotions: []
+            };
+            console.log(`⏺️ Started recording data for room: ${roomId}`);
+        }
+    });
+
+    // Receive live emotion data from the Therapist's AI
+    // Receive live emotion data from the Therapist's AI
+    socket.on('emotion-update', (data) => {
+        if (activeSessions[data.room]) {
+            activeSessions[data.room].emotions.push({
+                timestamp: new Date(),
+                expressions: data.expressions,
+                image: data.image || null // NEW: Save the image if one was sent this frame
+            });
+        }
+    });
+
+    // Save the massive data log to MongoDB when the session ends
+    socket.on('end-session', async (roomId) => {
+        if (activeSessions[roomId]) {
+            activeSessions[roomId].endTime = new Date();
+            
+            try {
+                // Dump the entire memory array into the database at once!
+                await SessionLog.create(activeSessions[roomId]);
+                console.log(`✅ Session log permanently saved for room: ${roomId}`);
+            } catch (error) {
+                console.error('❌ Failed to save session log:', error);
+            }
+            
+            // Clear the temporary memory
+            delete activeSessions[roomId];
+        }
     });
 
     // Relay WebRTC Handshake Data
