@@ -15,7 +15,7 @@
     </header>
 
     <main id="landing-page" class="container">
-        <div class="glass-panel content-box text-center">
+        <div id="welcome-box" class="dynamic-glass-panel content-box text-center">
             <h1>Welcome to TheraSense</h1>
             <p>Enhancing remote mental health care through emotion-aware technology.</p>
             <p>TheraSense uses advanced AI to track facial expressions during video teleconsultations, providing therapists with real-time, quantifiable emotional insights to deliver more personalized care.</p>
@@ -27,7 +27,7 @@
     </main>
 
     <div id="login-modal" class="modal hidden">
-        <div class="glass-panel login-box">
+        <div class="dynamic-glass-panel login-box" style="padding: 40px;">
             <h2>Sign In</h2>
             <div class="tabs">
                 <button class="glass-btn tab-btn active" data-role="therapist">Therapist</button>
@@ -49,14 +49,65 @@
         </div>
     </div>
 
-    <div id="dashboard" class="hidden container">
-        <div class="glass-panel">
-            <h2 id="dashboard-title">Dashboard</h2>
-            <p>Welcome back. Dashboard features coming in Phase 2.</p>
-            <button id="logout-btn" class="glass-btn">Logout</button>
+    <div id="dashboard" class="hidden container" style="z-index: 10;">
+        
+        <div id="therapist-dashboard" class="dynamic-glass-panel content-box hidden" style="width: 100%; padding: 40px;">
+            <h2>Therapist Control Panel</h2>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+            
+            <div style="display: flex; gap: 40px; justify-content: space-between; text-align: left;">
+                <div style="flex: 1;">
+                    <h3>Registered Patients</h3>
+                    <ul id="patient-list" style="margin-top: 15px; list-style: none; color: var(--text-secondary);"></ul>
+                </div>
+                <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 40px;">
+                    <h3>Create Patient Credential</h3>
+                    <form id="create-patient-form" style="margin-top: 15px;">
+                        <div class="input-group">
+                            <input type="text" id="new-patient-id" class="glass-input" placeholder="New Patient ID" required>
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="new-patient-pwd" class="glass-input" placeholder="Temporary Password" required>
+                        </div>
+                        <button type="submit" class="glass-btn submit-btn" style="margin-top: 10px;">Create Patient</button>
+                    </form>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <h3>Live Teleconsultation</h3>
+                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                    <video id="therapist-local-video" autoplay muted style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+                    <div id="video-wrapper" style="position: relative; width: 300px; height: fit-content;">
+                        <video id="therapist-remote-video" autoplay style="width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); display: block;"></video>
+                    </div>
+                </div>
+                <button id="therapist-join-call" class="glass-btn primary-btn" style="margin-top: 15px;">Start Session</button>
+            </div>
+            
+            <div style="margin-top: 40px; text-align: center;">
+                <button id="logout-btn" class="glass-btn close-btn">Logout</button>
+            </div>
+        </div>
+
+        <div id="patient-dashboard" class="dynamic-glass-panel content-box hidden" style="width: 100%; padding: 40px;">
+            <h2>Patient Portal</h2>
+            <p>Welcome. Your teleconsultation room is ready.</p>
+            
+            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                <video id="patient-local-video" autoplay muted style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+                <video id="patient-remote-video" autoplay style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+            </div>
+            
+            <div style="margin-top: 40px; text-align: center;">
+                <button id="patient-join-call" class="glass-btn primary-btn">Join Call</button>
+                <button id="patient-logout-btn" class="glass-btn close-btn" style="margin-top: 15px;">Logout</button>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

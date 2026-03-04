@@ -96,6 +96,46 @@ body {
     z-index: 2; /* Ensures text stays above the blur */
 }
 
+/* --- Dynamic Glass Panel (For the Welcome Box) --- */
+.dynamic-glass-panel {
+    position: relative;
+    
+    /* Base state: The perfect middle ground (mild opacity and soft blur) */
+    background: rgba(255, 255, 255, 0.04); 
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 20px;
+    overflow: hidden; 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* The glowing flashlight layer revealed by hover */
+.dynamic-glass-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    
+    /* Adds the heavy frost and brighter glow ONLY where the cursor is */
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    z-index: -1;
+    
+    /* Mask: Reveals the effect in a 300px circle around the cursor */
+    -webkit-mask-image: radial-gradient(circle 300px at var(--mouse-x, -1000px) var(--mouse-y, -1000px), black 0%, transparent 100%);
+    mask-image: radial-gradient(circle 300px at var(--mouse-x, -1000px) var(--mouse-y, -1000px), black 0%, transparent 100%);
+    
+    transition: opacity 0.3s ease;
+}
+
+/* Ensures all text and elements inside stay above the blur */
+.dynamic-glass-panel > * {
+    position: relative;
+    z-index: 2;
+}
+
 /* Layout */
 .container {
     flex: 1; display: flex; flex-direction: column;
