@@ -5,14 +5,8 @@ const navBar = document.getElementById('nav-bar');
 const welcomeBox = document.getElementById('welcome-box'); 
 
 let particlesArray = [];
-const SPACING = 30; 
-const BASE_FLAKE_RADIUS = 350; 
-const MAX_LENGTH = 14; 
-const DOT_SIZE = 2; 
-const LIFESPAN_MS = 2000; 
-const BASE_OPACITY = 0.35; 
-const MAX_OPACITY = 0.90; 
-
+const SPACING = 30; const BASE_FLAKE_RADIUS = 350; const MAX_LENGTH = 14; 
+const DOT_SIZE = 2; const LIFESPAN_MS = 2000; const BASE_OPACITY = 0.35; const MAX_OPACITY = 0.90; 
 let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 let delayedMouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
@@ -36,15 +30,7 @@ window.addEventListener('mousemove', function(event) {
     }
 });
 
-window.addEventListener('mouseout', () => {
-    if(navBar) { navBar.style.setProperty('--mouse-x', `-1000px`); navBar.style.setProperty('--mouse-y', `-1000px`); }
-    if(welcomeBox) { welcomeBox.style.setProperty('--mouse-x', `-1000px`); welcomeBox.style.setProperty('--mouse-y', `-1000px`); }
-});
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    init(); 
-});
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; init(); });
 
 // --- PARTICLES ---
 class Particle {
@@ -90,13 +76,10 @@ class Particle {
         ctx.restore();
     }
 }
-
 function init() {
     particlesArray = []; canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     for (let y = -SPACING; y < canvas.height + SPACING; y += SPACING) {
-        for (let x = -SPACING; x < canvas.width + SPACING; x += SPACING) {
-            particlesArray.push(new Particle(x, y));
-        }
+        for (let x = -SPACING; x < canvas.width + SPACING; x += SPACING) { particlesArray.push(new Particle(x, y)); }
     }
 }
 function animate() {
@@ -119,10 +102,11 @@ const loginForm = document.getElementById('login-form');
 const landingPage = document.getElementById('landing-page');
 const dashboardContainer = document.getElementById('dashboard');
 
-// Dashboards
-const adminDashboard = document.getElementById('admin-dashboard');
-const therapistDashboard = document.getElementById('therapist-dashboard');
-const patientDashboard = document.getElementById('patient-dashboard');
+// NEW: Sidebar Elements
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const sideNav = document.getElementById('side-nav');
+const closeNavBtn = document.getElementById('close-nav-btn');
+const navLinksContainer = document.getElementById('nav-links-container');
 
 showLoginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
 closeLoginBtn.addEventListener('click', () => loginModal.classList.add('hidden'));
@@ -154,21 +138,86 @@ loginForm.addEventListener('submit', async (e) => {
             loginModal.classList.add('hidden');
             landingPage.classList.add('hidden');
             dashboardContainer.classList.remove('hidden');
+            
+            // Show hamburger menu
+            hamburgerBtn.classList.remove('hidden');
+            buildSidebarMenu(currentUser.role);
+
+            // Hide all dashboards first
+            document.getElementById('admin-settings-view').classList.add('hidden');
+            document.getElementById('therapist-dashboard').classList.add('hidden');
+            document.getElementById('patient-dashboard').classList.add('hidden');
 
             if (currentUser.role === 'admin') {
-                adminDashboard.classList.remove('hidden');
+                document.getElementById('admin-settings-view').classList.remove('hidden');
                 updateSnapshotToggleUI(globalSnapshotsEnabled);
             } else if (currentUser.role === 'therapist') {
-                therapistDashboard.classList.remove('hidden');
+                document.getElementById('therapist-dashboard').classList.remove('hidden');
                 setupVideoUI('therapist');
                 loadPatients(); 
             } else {
-                patientDashboard.classList.remove('hidden');
+                document.getElementById('patient-dashboard').classList.remove('hidden');
+                switchPatientView('view-teleconsultation'); // Default view
                 setupVideoUI('patient');
             }
-        } else { alert('Invalid credentials. Please try again.'); }
+        } else { alert('Invalid credentials.'); }
     } catch (error) { console.error('Login error:', error); }
 });
+
+// --- NEW: SIDEBAR NAVIGATION LOGIC ---
+hamburgerBtn.addEventListener('click', () => {
+    sideNav.classList.remove('hidden');
+    setTimeout(() => sideNav.classList.add('open'), 10);
+});
+
+closeNavBtn.addEventListener('click', closeSidebar);
+
+function closeSidebar() {
+    sideNav.classList.remove('open');
+    setTimeout(() => sideNav.classList.add('hidden'), 300);
+}
+
+function buildSidebarMenu(role) {
+    navLinksContainer.innerHTML = ''; // Clear old links
+    let links = [];
+
+    if (role === 'patient') {
+        links = [
+            { name: '🎥 Teleconsultation Room', action: () => switchPatientView('view-teleconsultation') },
+            { name: '📅 Appointment Booking', action: () => switchPatientView('view-booking') },
+            { name: '🤖 Chatbot Assistant', action: () => switchPatientView('view-chatbot') },
+            { name: '📊 Session Reports', action: () => { document.getElementById('analytics-modal').classList.remove('hidden'); loadAnalyticsData(); } }
+        ];
+    } else if (role === 'therapist') {
+        links = [
+            { name: '🎥 Teleconsultation Room', action: () => {} }, // Default view for therapist
+            { name: '📊 Session History', action: () => { document.getElementById('analytics-modal').classList.remove('hidden'); loadAnalyticsData(); } }
+        ];
+    } else if (role === 'admin') {
+        links = [
+            { name: '⚙️ System Settings', action: () => {} },
+            { name: '📊 Global Session Logs', action: () => { document.getElementById('analytics-modal').classList.remove('hidden'); loadAnalyticsData(); } }
+        ];
+    }
+
+    links.forEach(link => {
+        const btn = document.createElement('button');
+        btn.className = 'glass-btn nav-item';
+        btn.innerText = link.name;
+        btn.addEventListener('click', () => {
+            link.action();
+            closeSidebar();
+        });
+        navLinksContainer.appendChild(btn);
+    });
+}
+
+function switchPatientView(viewId) {
+    // Hide all patient views
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+    // Show the selected one
+    document.getElementById(viewId).classList.add('active-view');
+}
 
 // --- ADMIN SPECIFIC LOGIC ---
 document.getElementById('create-therapist-form')?.addEventListener('submit', async (e) => {
@@ -186,10 +235,7 @@ document.getElementById('create-therapist-form')?.addEventListener('submit', asy
 const toggleBtn = document.getElementById('toggle-snapshots-btn');
 toggleBtn?.addEventListener('click', async () => {
     globalSnapshotsEnabled = !globalSnapshotsEnabled;
-    await fetch('/api/settings/snapshots', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: globalSnapshotsEnabled })
-    });
+    await fetch('/api/settings/snapshots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: globalSnapshotsEnabled }) });
     updateSnapshotToggleUI(globalSnapshotsEnabled);
 });
 
@@ -203,7 +249,6 @@ function updateSnapshotToggleUI(isEnabled) {
 
 // --- THERAPIST SPECIFIC LOGIC ---
 async function loadPatients() {
-    // Only load patients created by THIS therapist
     const response = await fetch(`/api/patients?therapistId=${currentUser.id}`);
     const data = await response.json();
     const patientListUl = document.getElementById('patient-list');
@@ -224,7 +269,6 @@ document.getElementById('create-patient-form')?.addEventListener('submit', async
     const password = document.getElementById('new-patient-pwd').value;
     const response = await fetch('/api/patients', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        // Bind the patient to the current therapist!
         body: JSON.stringify({ username, password, therapistId: currentUser.id })
     });
     if ((await response.json()).success) { alert('Patient created!'); e.target.reset(); loadPatients(); } 
@@ -235,10 +279,9 @@ document.getElementById('create-patient-form')?.addEventListener('submit', async
 document.querySelectorAll('.logout-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         if(socket) socket.emit('end-session', ROOM_ID); 
+        closeSidebar();
+        hamburgerBtn.classList.add('hidden');
         dashboardContainer.classList.add('hidden');
-        adminDashboard.classList.add('hidden');
-        therapistDashboard.classList.add('hidden');
-        patientDashboard.classList.add('hidden');
         landingPage.classList.remove('hidden');
         loginForm.reset();
         currentUser = null;
@@ -273,7 +316,6 @@ async function startCall() {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         localVideoElement.srcObject = localStream;
         joinCallBtn.innerText = "Camera Active - Waiting for peer..."; joinCallBtn.disabled = true;
-        // Pass the therapist ID so logs can be tied to them
         socket.emit('join-room', { roomId: ROOM_ID, therapistId: currentUser?.role === 'therapist' ? currentUser.id : null });
     } catch (error) { alert('Could not access camera/microphone.'); }
 }
@@ -296,16 +338,52 @@ if (videoWrapper) {
         faceapi.matchDimensions(canvas, displaySize);
 
         let frameCounter = 0;
+        const ctx = canvas.getContext('2d');
+
         setInterval(async () => {
             if (remoteVideo.paused || remoteVideo.ended) return;
             const detections = await faceapi.detectAllFaces(remoteVideo, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
-            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-            faceapi.draw.drawDetections(canvas, resizedDetections); faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (detections.length > 0) {
+            if (resizedDetections.length > 0) {
+                const detection = resizedDetections[0];
+                const box = detection.detection.box;
+                const expressions = detection.expressions;
+
+                // --- CUSTOM SCI-FI HUD OVERLAY ---
+                ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 2; ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 8;
+                const len = 20; const { x, y, width, height } = box;
+                ctx.beginPath();
+                ctx.moveTo(x, y + len); ctx.lineTo(x, y); ctx.lineTo(x + len, y);
+                ctx.moveTo(x + width - len, y); ctx.lineTo(x + width, y); ctx.lineTo(x + width, y + len);
+                ctx.moveTo(x + width, y + height - len); ctx.lineTo(x + width, y + height); ctx.lineTo(x + width - len, y + height);
+                ctx.moveTo(x, y + height - len); ctx.lineTo(x, y + height); ctx.lineTo(x + len, y + height);
+                ctx.stroke();
+
+                ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, width, height);
+
+                const sortedEmotions = Object.entries(expressions).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                const panelWidth = 120; const panelHeight = 55; 
+                let finalPanelX = x + width + 15; 
+                if (finalPanelX + panelWidth > canvas.width) finalPanelX = x - panelWidth - 15;
+                if (finalPanelX < 0) finalPanelX = 10;
+                let finalPanelY = Math.max(10, Math.min(canvas.height - panelHeight - 10, y));
+
+                ctx.fillStyle = 'rgba(10, 10, 10, 0.6)'; ctx.beginPath();
+                ctx.roundRect(finalPanelX, finalPanelY, panelWidth, panelHeight, 8); ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'; ctx.stroke();
+
+                let textY = finalPanelY + 14; ctx.font = '11px sans-serif';
+                sortedEmotions.forEach(([emotion, value], index) => {
+                    const percentage = Math.round(value * 100);
+                    ctx.fillStyle = index === 0 ? '#00ff88' : '#a0a0a0'; 
+                    ctx.fillText(`${emotion.toUpperCase()}:`, finalPanelX + 12, textY);
+                    ctx.textAlign = 'right'; ctx.fillText(`${percentage}%`, finalPanelX + panelWidth - 12, textY);
+                    ctx.textAlign = 'left'; textY += 16; 
+                });
+
                 let snapshot = null;
-                // Only take snapshot if enabled globally!
                 if (frameCounter % 50 === 0 && globalSnapshotsEnabled) {
                     const snapCanvas = document.createElement('canvas');
                     snapCanvas.width = remoteVideo.videoWidth; snapCanvas.height = remoteVideo.videoHeight;
@@ -313,7 +391,7 @@ if (videoWrapper) {
                     snapshot = snapCanvas.toDataURL('image/jpeg', 0.5); 
                 }
                 frameCounter++;
-                socket.emit('emotion-update', { room: ROOM_ID, expressions: detections[0].expressions, image: snapshot });
+                socket.emit('emotion-update', { room: ROOM_ID, expressions: expressions, image: snapshot });
             }
         }, 100);
     });
@@ -342,7 +420,6 @@ document.getElementById('close-analytics-btn')?.addEventListener('click', () => 
 
 async function loadAnalyticsData() {
     try {
-        // Fetch URL changes based on whether user is Admin (sees all) or Therapist (sees theirs)
         const fetchUrl = currentUser.role === 'admin' ? '/api/sessions' : `/api/sessions?therapistId=${currentUser.id}`;
         const response = await fetch(fetchUrl);
         const data = await response.json();
@@ -382,28 +459,13 @@ function renderAnalyticsSidebar(sessions) {
 
 function renderSessionDetails(session) {
     const mainView = document.getElementById('analytics-main-view');
-    
-    // Always render the chart
-    let htmlContent = `
-        <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-            <canvas id="emotion-chart"></canvas>
-        </div>`;
-        
-    // Only inject the Snapshot HTML if they are Admin OR if it's enabled globally
+    let htmlContent = `<div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 20px;"><canvas id="emotion-chart"></canvas></div>`;
     if (currentUser.role === 'admin' || globalSnapshotsEnabled) {
-        htmlContent += `
-            <h3>Session Snapshots</h3>
-            <div id="snapshot-gallery" style="display: flex; gap: 15px; overflow-x: auto; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;"></div>
-        `;
+        htmlContent += `<h3>Session Snapshots</h3><div id="snapshot-gallery" style="display: flex; gap: 15px; overflow-x: auto; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 10px;"></div>`;
     }
-    
     mainView.innerHTML = htmlContent;
     plotChart(session.emotions);
-    
-    // Only try to populate the snapshots if the container actually exists
-    if (currentUser.role === 'admin' || globalSnapshotsEnabled) {
-        displaySnapshots(session.emotions);
-    }
+    if (currentUser.role === 'admin' || globalSnapshotsEnabled) displaySnapshots(session.emotions);
 }
 
 function plotChart(emotionsData) {

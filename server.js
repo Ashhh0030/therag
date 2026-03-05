@@ -1,20 +1,26 @@
 // server.js
 const express = require('express');
+require('dotenv').config();
 const path = require('path');
 const mongoose = require('mongoose');
 const http = require('http'); 
 const { Server } = require('socket.io'); 
+
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const app = express();
 const server = http.createServer(app); 
 const io = new Server(server); 
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve the optimized React build instead of the old public folder
+app.use(express.static(path.join(__dirname, 'frontend/dist')));
 app.use(express.json());
 
 // --- MONGODB CONNECTION ---
-mongoose.connect('mongodb://127.0.0.1:27017/therasense_db')
+// Uses the Cloud database URL if it exists, otherwise falls back to your local database
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/therasense_db')
     .then(() => {
         console.log('✅ Connected to MongoDB successfully.');
         createDefaultAccounts();
@@ -29,6 +35,15 @@ const userSchema = new mongoose.Schema({
     therapistId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } // Ties patients to a therapist
 });
 const User = mongoose.model('User', userSchema);
+
+const appointmentSchema = new mongoose.Schema({
+    patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    therapistId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    date: String,
+    time: String,
+    status: { type: String, default: 'Upcoming' }
+});
+const Appointment = mongoose.model('Appointment', appointmentSchema);
 
 const sessionLogSchema = new mongoose.Schema({
     roomId: String,
@@ -137,6 +152,63 @@ app.post('/api/settings/snapshots', async (req, res) => {
         await Setting.updateOne({}, { snapshotsEnabled: req.body.enabled });
         res.json({ success: true });
     } catch (error) { res.status(500).json({ success: false }); }
+});
+
+// 8. AI Chatbot Route
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+        
+        // We use gemini-1.5-flash as it is fast and excellent for chat
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        // System prompt to give the AI its persona
+        const prompt = `You are a supportive, empathetic AI assistant for a mental health platform called TheraSense. 
+        Your goal is to provide grounding, supportive, and concise responses to patients between their actual therapy sessions. 
+        Do not give medical diagnoses. Keep your response under 3 sentences.
+        The patient says: "${message}"`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({ success: true, text: text });
+    } catch (error) {
+        console.error('AI Error:', error);
+        res.status(500).json({ success: false, text: "I'm sorry, I'm having trouble connecting to my network right now. Please take a deep breath and try again in a moment." });
+    }
+});
+
+// 9. Book an Appointment
+app.post('/api/appointments', async (req, res) => {
+    try {
+        const { patientId, therapistId, date, time } = req.body;
+        const newAppointment = await Appointment.create({ patientId, therapistId, date, time });
+        res.json({ success: true, appointment: newAppointment });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to book appointment' });
+    }
+});
+
+// 10. Get Appointments for a User
+app.get('/api/appointments/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        // Find appointments where the user is either the patient or the therapist
+        const appointments = await Appointment.find({
+            $or: [{ patientId: userId }, { therapistId: userId }]
+        }).sort({ date: 1 }); // Sort by closest date
+        res.json({ success: true, appointments });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// ... your other API routes (like app.post('/api/settings/snapshots', ...))
+
+// SPA Catch-all: MUST go after all API routes!
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/dist', 'index.html'));
 });
 
 // --- WEBRTC & SOCKET LOGIC ---

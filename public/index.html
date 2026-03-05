@@ -5,22 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TheraSense | AI-Powered Teleconsultation</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Smooth Sidebar Transition */
+        #side-nav {
+            position: fixed; top: 0; left: -350px; width: 300px; height: 100vh; 
+            z-index: 9999; transition: left 0.3s ease-in-out; 
+            padding: 30px; display: flex; flex-direction: column;
+            background: rgba(10, 10, 15, 0.85); backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        #side-nav.open { left: 0; }
+        .nav-item { width: 100%; text-align: left; margin-bottom: 15px; padding: 15px; font-size: 1.1rem; }
+        .view-section { display: none; width: 100%; animation: fadeIn 0.4s ease; }
+        .view-section.active-view { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
     <canvas id="particle-canvas"></canvas>
     <div id="cursor-glow"></div>
 
-    <header id="nav-bar" class="dynamic-glass-header">
+    <header id="nav-bar" class="dynamic-glass-header" style="display: flex; align-items: center; justify-content: flex-start; padding: 0 40px;">
+        <button id="hamburger-btn" class="glass-btn hidden" style="padding: 8px 15px; margin-right: 20px; font-size: 1.5rem; border: none; background: transparent; box-shadow: none;">☰</button>
         <div class="logo">TheraSense</div>
     </header>
+
+    <div id="side-nav" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
+            <h2 style="margin: 0; color: #fff;">Menu</h2>
+            <button id="close-nav-btn" style="background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer;">✕</button>
+        </div>
+        <div id="nav-links-container" style="flex: 1; display: flex; flex-direction: column;">
+            </div>
+        <div style="margin-top: auto;">
+            <button class="glass-btn close-btn logout-btn" style="width: 100%;">Logout</button>
+        </div>
+    </div>
 
     <main id="landing-page" class="container">
         <div id="welcome-box" class="dynamic-glass-panel content-box text-center">
             <h1>Welcome to TheraSense</h1>
             <p>Enhancing remote mental health care through emotion-aware technology.</p>
-            <p>TheraSense uses advanced AI to track facial expressions during video teleconsultations, providing therapists with real-time, quantifiable emotional insights to deliver more personalized care.</p>
         </div>
-        
         <div class="action-area text-center">
             <button id="show-login-btn" class="glass-btn primary-btn">Login to Platform</button>
         </div>
@@ -33,16 +59,9 @@
                 <button class="glass-btn tab-btn active" data-role="therapist">Therapist</button>
                 <button class="glass-btn tab-btn" data-role="patient">Patient</button>
             </div>
-            
             <form id="login-form">
-                <div class="input-group">
-                    <label>User ID</label>
-                    <input type="text" id="userid" class="glass-input" required>
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="password" class="glass-input" required>
-                </div>
+                <div class="input-group"><label>User ID</label><input type="text" id="userid" class="glass-input" required></div>
+                <div class="input-group"><label>Password</label><input type="password" id="password" class="glass-input" required></div>
                 <button type="submit" class="glass-btn submit-btn">Login</button>
             </form>
             <button id="close-login-btn" class="glass-btn close-btn">Cancel</button>
@@ -71,37 +90,6 @@
 
     <div id="dashboard" class="hidden container" style="z-index: 10;">
         
-        <div id="admin-dashboard" class="dynamic-glass-panel content-box hidden" style="width: 100%; padding: 40px;">
-            <h2>Admin Control Panel</h2>
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
-            <div style="display: flex; gap: 40px; justify-content: space-between; text-align: left;">
-                <div style="flex: 1;">
-                    <h3>System Settings</h3>
-                    <div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px;">
-                        <p style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary);">Enable or disable Therapist access to session photo snapshots.</p>
-                        <button id="toggle-snapshots-btn" class="glass-btn" style="width: 100%;">Loading...</button>
-                    </div>
-                    <h3 style="margin-top: 30px;">Global Data</h3>
-                    <button class="glass-btn primary-btn view-analytics-btn" style="width: 100%; margin-top: 15px;">View All Session Logs</button>
-                </div>
-                <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 40px;">
-                    <h3>Create Therapist Account</h3>
-                    <form id="create-therapist-form" style="margin-top: 15px;">
-                        <div class="input-group">
-                            <input type="text" id="new-therapist-id" class="glass-input" placeholder="Therapist Username" required>
-                        </div>
-                        <div class="input-group">
-                            <input type="password" id="new-therapist-pwd" class="glass-input" placeholder="Password" required>
-                        </div>
-                        <button type="submit" class="glass-btn submit-btn" style="margin-top: 10px;">Create Therapist</button>
-                    </form>
-                </div>
-            </div>
-            <div style="margin-top: 40px; text-align: center;">
-                <button class="glass-btn close-btn logout-btn">Logout</button>
-            </div>
-        </div>
-
         <div id="therapist-dashboard" class="dynamic-glass-panel content-box hidden" style="width: 100%; padding: 40px;">
             <h2>Therapist Control Panel</h2>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
@@ -113,12 +101,8 @@
                 <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 40px;">
                     <h3>Create Patient Credential</h3>
                     <form id="create-patient-form" style="margin-top: 15px;">
-                        <div class="input-group">
-                            <input type="text" id="new-patient-id" class="glass-input" placeholder="New Patient ID" required>
-                        </div>
-                        <div class="input-group">
-                            <input type="password" id="new-patient-pwd" class="glass-input" placeholder="Temporary Password" required>
-                        </div>
+                        <div class="input-group"><input type="text" id="new-patient-id" class="glass-input" placeholder="New Patient ID" required></div>
+                        <div class="input-group"><input type="password" id="new-patient-pwd" class="glass-input" placeholder="Temporary Password" required></div>
                         <button type="submit" class="glass-btn submit-btn" style="margin-top: 10px;">Create Patient</button>
                     </form>
                 </div>
@@ -126,32 +110,79 @@
             <div style="margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
                 <h3>Live Teleconsultation</h3>
                 <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
-                    <video id="therapist-local-video" autoplay muted style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+                    <video id="therapist-local-video" autoplay muted style="transform: scaleX(-1); width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
                     <div id="video-wrapper" style="position: relative; width: 300px; height: fit-content;">
                         <video id="therapist-remote-video" autoplay style="width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); display: block;"></video>
                     </div>
                 </div>
                 <div style="margin-top: 20px;">
                     <button id="therapist-join-call" class="glass-btn primary-btn">Start Session</button>
-                    <button class="glass-btn view-analytics-btn" style="margin-left: 15px;">View History</button>
+                    <button class="glass-btn view-analytics-btn" style="margin-left: 15px;">View Session History</button>
                 </div>
-            </div>
-            <div style="margin-top: 40px; text-align: center;">
-                <button class="glass-btn close-btn logout-btn">Logout</button>
             </div>
         </div>
 
-        <div id="patient-dashboard" class="dynamic-glass-panel content-box hidden" style="width: 100%; padding: 40px;">
-            <h2>Patient Portal</h2>
-            <p>Welcome. Your teleconsultation room is ready.</p>
-            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
-                <video id="patient-local-video" autoplay muted style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
-                <video id="patient-remote-video" autoplay style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+        <div id="admin-settings-view" class="dynamic-glass-panel content-box hidden" style="width: 100%; padding: 40px;">
+            <h2>Admin Control Panel</h2>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+            <div style="display: flex; gap: 40px; justify-content: space-between; text-align: left;">
+                <div style="flex: 1;">
+                    <h3>System Settings</h3>
+                    <div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px;">
+                        <p style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary);">Enable or disable Therapist access to session photo snapshots.</p>
+                        <button id="toggle-snapshots-btn" class="glass-btn" style="width: 100%;">Loading...</button>
+                    </div>
+                </div>
+                <div style="flex: 1; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 40px;">
+                    <h3>Create Therapist Account</h3>
+                    <form id="create-therapist-form" style="margin-top: 15px;">
+                        <div class="input-group"><input type="text" id="new-therapist-id" class="glass-input" placeholder="Therapist Username" required></div>
+                        <div class="input-group"><input type="password" id="new-therapist-pwd" class="glass-input" placeholder="Password" required></div>
+                        <button type="submit" class="glass-btn submit-btn" style="margin-top: 10px;">Create Therapist</button>
+                    </form>
+                </div>
             </div>
-            <div style="margin-top: 40px; text-align: center;">
-                <button id="patient-join-call" class="glass-btn primary-btn">Join Call</button>
-                <button class="glass-btn close-btn logout-btn" style="margin-top: 15px;">Logout</button>
+        </div>
+
+        <div id="patient-dashboard" class="hidden" style="width: 100%;">
+            
+            <div id="view-teleconsultation" class="dynamic-glass-panel content-box view-section active-view" style="padding: 40px;">
+                <h2>Live Teleconsultation</h2>
+                <p>Welcome. Your secure video room is ready.</p>
+                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px;">
+                    <video id="patient-local-video" autoplay muted style="transform: scaleX(-1); width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+                    <video id="patient-remote-video" autoplay style="width: 300px; border-radius: 12px; border: 1px solid var(--glass-border);"></video>
+                </div>
+                <div style="margin-top: 40px; text-align: center;">
+                    <button id="patient-join-call" class="glass-btn primary-btn">Join Call</button>
+                </div>
             </div>
+
+            <div id="view-booking" class="dynamic-glass-panel content-box view-section" style="padding: 40px;">
+                <h2>Appointment Booking</h2>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+                <p style="color: var(--text-secondary); margin-bottom: 30px;">Select an available time slot for your next session.</p>
+                <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 40px; text-align: center; border: 1px dashed rgba(255,255,255,0.2);">
+                    <h1 style="font-size: 3rem; margin-bottom: 10px;">📅</h1>
+                    <h3>Calendar Integration Ready</h3>
+                    <p style="color: var(--text-secondary);">This module is ready to connect to your backend booking API.</p>
+                </div>
+            </div>
+
+            <div id="view-chatbot" class="dynamic-glass-panel content-box view-section" style="padding: 40px;">
+                <h2>AI Chatbot Assistant</h2>
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 20px 0;">
+                <div style="background: rgba(0,0,0,0.3); border-radius: 12px; height: 400px; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="align-self: flex-start; background: rgba(0, 255, 136, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(0, 255, 136, 0.3); max-width: 80%; margin-bottom: 20px;">
+                        <p style="margin: 0;">Hello! I am your AI assistant. How are you feeling today? I'm here to support you between your therapy sessions.</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" class="glass-input" placeholder="Type your message..." style="flex: 1; margin: 0;">
+                        <button class="glass-btn primary-btn" style="width: auto; padding: 0 25px;">Send</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 

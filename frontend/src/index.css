@@ -1,0 +1,247 @@
+/* style.css */
+:root {
+    --bg-color: #080808; 
+    /* Increased white opacity for a more pronounced glass effect */
+    --glass-bg: rgba(255, 255, 255, 0.08); 
+    --glass-border: rgba(255, 255, 255, 0.15); 
+    --glass-highlight: rgba(255, 255, 255, 0.2);
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+}
+
+* {
+    box-sizing: border-box; margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* Background Effects */
+#particle-canvas {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: -2; pointer-events: none;
+}
+
+#cursor-glow {
+    position: fixed;
+    top: 50%; left: 50%;
+    /* Increased range (size) and reduced intensity (opacity) */
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.025) 0%, rgba(0, 0, 0, 0) 60%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: -1;
+    transition: width 0.2s, height 0.2s; 
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px); /* Creates the blur for particles passing behind */
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* --- Dynamic Glass Navbar (Replaced the old Navigation block) --- */
+/* --- Dynamic Glass Navbar --- */
+.dynamic-glass-header {
+    width: 100vw; /* Forces it to span the entire screen width */
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    border-radius: 0; 
+    
+    position: fixed; /* Takes it out of the flexbox centering */
+    top: 0;          /* Locks it to the very top */
+    left: 0;         /* Locks it to the left edge */
+    z-index: 1000;
+    
+    background: rgba(255, 255, 255, 0.01); 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden; 
+}
+
+/* The hidden heavy glass layer revealed by hover */
+/* Update this in index.css */
+.dynamic-glass-panel::before, .dynamic-glass-header::before {
+    content: '';
+    position: absolute;
+    /* Use 'fixed' to map the flashlight to the screen coordinates directly */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        600px circle at var(--mouse-x) var(--mouse-y), 
+        rgba(255, 255, 255, 0.12), /* Increased opacity for visibility */
+        transparent 40%
+    );
+    background-attachment: fixed; /* CRUCIAL: Keeps the gradient relative to the window */
+    z-index: -1; 
+    pointer-events: none;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 2; /* Ensures text stays above the blur */
+}
+
+/* --- Dynamic Glass Panel (For the Welcome Box) --- */
+.dynamic-glass-panel {
+    position: relative;
+    
+    /* Base state: The perfect middle ground (mild opacity and soft blur) */
+    background: rgba(255, 255, 255, 0.04); 
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 20px;
+    overflow: hidden; 
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth "S-curve" animation */
+    max-height: 1000px; 
+}
+
+/* The glowing flashlight layer revealed by hover */
+
+/* Ensures all text and elements inside stay above the blur */
+.dynamic-glass-panel > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Layout */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* This handles vertical centering */
+    width: 100vw;
+    height: 100vh; /* Vital for centering in the middle of the screen */
+    padding: 20px;
+    position: relative;
+}
+.content-box { padding: 50px; border-radius: 20px; margin-bottom: 40px; }
+.content-box h1 { margin-bottom: 20px; font-size: 2.8rem; font-weight: 400;}
+.content-box p { margin-bottom: 15px; color: var(--text-secondary); line-height: 1.6; font-weight: 300;}
+.text-center { text-align: center; }
+.hidden { display: none !important; }
+
+/* Buttons & Inputs (Glass effect) */
+.glass-btn, .glass-input {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    color: var(--text-primary); padding: 12px 24px;
+    border-radius: 12px; font-size: 1rem; cursor: pointer;
+    transition: all 0.3s ease; outline: none; font-weight: 300;
+}
+.glass-btn:hover { background: var(--glass-highlight); box-shadow: 0 0 20px rgba(255, 255, 255, 0.1); }
+.primary-btn { padding: 15px 40px; font-size: 1.2rem; margin-top: 20px; border-radius: 30px;}
+
+/* Modal & Login Form */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
+    display: flex; justify-content: center; align-items: center; z-index: 1000;
+}
+.login-box { padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; }
+.login-box h2 { text-align: center; margin-bottom: 30px; font-weight: 400;}
+.tabs { display: flex; gap: 10px; margin-bottom: 30px; }
+.tab-btn { flex: 1; border-radius: 8px;}
+.tab-btn.active { background: rgba(255, 255, 255, 0.15); font-weight: 500; }
+.input-group { margin-bottom: 20px; display: flex; flex-direction: column; text-align: left; }
+.input-group label { margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary); }
+.glass-input { padding: 15px; width: 100%; background: rgba(0,0,0,0.2); border-radius: 8px;}
+.glass-input:focus { border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.4); }
+.submit-btn { width: 100%; margin-bottom: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;}
+.close-btn { width: 100%; background: transparent; border: none; color: var(--text-secondary); }
+.close-btn:hover { background: rgba(255,0,0,0.1); color: #fff; }
+
+.morph-exit {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.morph-enter {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.4s 0.2s, transform 0.4s 0.2s; /* Delayed to wait for shrink */
+}
+
+/* Update these in index.css */
+
+/* The 'Pull' Animation */
+.pull-together {
+    transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    transform: translateY(var(--pull-distance)) scale(0.8);
+    opacity: 0;
+}
+
+/* The Login Box emerging from the center */
+.login-emerge {
+    animation: loginScaleUp 0.6s forwards;
+    transform-origin: center;
+}
+
+@keyframes loginScaleUp {
+    from { 
+        transform: scale(0.5); 
+        opacity: 0; 
+    }
+    to { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+}
+
+/* --- SIDEBAR NAVIGATION --- */
+.side-nav {
+    position: fixed; 
+    top: 0; 
+    left: -350px; /* Hidden off-screen by default */
+    width: 300px; 
+    height: 100vh; 
+    z-index: 9999; 
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    padding: 30px; 
+    display: flex; 
+    flex-direction: column;
+    background: rgba(10, 10, 15, 0.85); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.side-nav.open { 
+    left: 0; /* Slides in! */
+}
+
+.nav-item { 
+    width: 100%; 
+    text-align: left; 
+    margin-bottom: 15px; 
+    padding: 15px; 
+    font-size: 1.1rem; 
+    background: rgba(255,255,255,0.03);
+    border: 1px solid transparent;
+}
+
+.nav-item:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+}
